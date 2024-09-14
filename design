@@ -1,0 +1,107 @@
+Design Document: BID Processing with Parallel Polling and Exponential Backoff
+1. Overview
+This document describes the design for tracking the number of processed records corresponding to unique GBIDs in a microservice architecture. The system ensures that each GBID’s progress is monitored by polling another microservice until the expected number of records is processed, using an asynchronous task scheduler with exponential backoff.
+
+2. Requirements
+Asynchronous Processing: Multiple GBIDs should be handled in parallel without blocking the system.
+Polling with Exponential Backoff: The system should poll the second microservice periodically, increasing the wait time after each poll if the records have not yet been processed.
+Error Handling and Timeouts: The system should retry polling until either the expected records are processed or a maximum retry count is reached.
+Scalability: The system should handle multiple GBIDs concurrently, supporting dynamic scalability through configuration.
+3. Architecture
+The system is divided into two main components:
+
+3.1 First Microservice (GBID Receiver)
+Responsibilities: This microservice receives GBIDs along with the expected number of records and schedules an asynchronous task to monitor the processing progress.
+Endpoints:
+POST /receive-gbid: Receives the gbid and expected number of records, then triggers the tracking process.
+Technologies:
+Java Spring Boot
+@Async for asynchronous processing
+RestTemplate for RESTful communication with the second microservice
+Custom thread pool for handling multiple GBIDs concurrently
+3.2 Second Microservice (Processing Status Provider)
+Responsibilities: This microservice processes the records and provides the current number of processed records when queried.
+Endpoints:
+GET /processed-records/{gbid}: Returns the number of records processed for the given GBID.
+4. Design Components
+4.1 Asynchronous Task Management
+Spring @Async is used to execute GBID tracking tasks asynchronously. Each GBID tracking is initiated when the first microservice receives a new GBID request. Asynchronous processing ensures the main application thread is not blocked and multiple GBID processing tasks can run in parallel.
+Thread Pool: A custom thread pool is configured to manage concurrent tasks, optimizing resource usage and preventing thread exhaustion.
+4.2 Exponential Backoff Polling
+The system uses exponential backoff for polling the second microservice, where the wait time between each polling attempt is doubled after each failure or incomplete response.
+This reduces the frequency of unnecessary requests and helps balance the load on the second microservice.
+4.3 Error Handling and Retry Logic
+Retry Limit: Each task will attempt to poll the second microservice for processed records a maximum of 10 times.
+Timeouts: If the task exceeds the maximum retries without receiving the expected records, it will timeout and log an error.
+Interrupt Handling: If a task is interrupted during execution, it will handle the exception gracefully and exit.
+5. Workflow
+Receive GBID: The first microservice receives a new GBID along with the expected number of records via a POST request to the /receive-gbid endpoint.
+Schedule Task: Upon receiving the request, the system schedules an asynchronous task to track the progress of that specific GBID.
+Polling: The task polls the second microservice (/processed-records/{gbid}) to retrieve the current number of processed records.
+Exponential Backoff: If the expected number of records is not processed, the system waits and doubles the wait time for the next poll.
+Completion: Once the expected records are processed, the task logs success and stops.
+Failure: If the task exceeds the maximum retry attempts, it logs an error and terminates.
+6. Sequence Diagram
+plaintext
+Copy code
++---------------------+       +---------------------+ 
+| First Microservice   |       | Second Microservice  |
++---------------------+       +---------------------+ 
+      |                           |  
+      |--- (POST) receive gbid --->|
+      |                           |
+      |<--- 200 OK (gbid received)-|
+      |                           |
+      |--- Async task polling ---->|
+      |                           |
+      |<--- Response (count) ------|
+      |                           |
+      |--- Wait and retry (backoff)|
+      |                           |
+      |<--- Response (completed) --|
+      |                           |
+      |---- Task completed --------|
+      |                           |
+7. Error Handling
+Network Failures: In case of network issues between the microservices, retries are handled with exponential backoff, and tasks are retried up to a maximum number of attempts.
+Timeouts: Each GBID task will stop after exceeding the retry limit or a maximum timeout period, logging a failure.
+Graceful Interrupts: If a task is interrupted, it catches and handles the exception, ensuring a clean shutdown.
+8. Configuration
+8.1 Thread Pool Configuration
+The following thread pool configuration ensures the application can handle multiple parallel tasks efficiently:
+
+java
+Copy code
+@Configuration
+@EnableAsync
+public class AsyncConfig {
+
+    @Bean(name = "taskExecutor")
+    public Executor taskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);  // Minimum number of threads
+        executor.setMaxPoolSize(50);   // Maximum number of threads
+        executor.setQueueCapacity(100); // Queue size for waiting tasks
+        executor.setThreadNamePrefix("Async-GbidTracker-");
+        executor.initialize();
+        return executor;
+    }
+}
+Core Pool Size: Specifies the number of threads that are always kept running to handle tasks.
+Max Pool Size: Determines the maximum number of threads that can be created to handle tasks concurrently.
+Queue Capacity: Defines the number of tasks that can wait in the queue if all threads are busy.
+8.2 Retry and Backoff Configuration
+Initial wait time: 1000 ms (1 second)
+Max retries: 10
+Backoff strategy: Double the wait time after each unsuccessful polling attempt.
+9. Deployment Considerations
+Scalability: The system can scale horizontally by increasing the number of instances of the first microservice. Ensure the second microservice can handle concurrent polling requests.
+Fault Tolerance: Ensure retries and error handling mechanisms are properly tested to handle intermittent failures in communication between microservices.
+Monitoring: Set up logging and monitoring (e.g., via Prometheus or ELK stack) to track the health of tasks and GBID processing performance.
+10. Conclusion
+This design ensures that the system can track the progress of multiple GBIDs concurrently with minimal resource overhead through asynchronous processing. The exponential backoff mechanism optimizes polling and reduces the load on the second microservice, ensuring efficient and scalable operation.
+
+Next Steps:
+Implement the outlined components and test the system under real-world scenarios, including handling multiple concurrent GBIDs and simulating failures to verify the robustness of the error handling and retry logic.
+Consider adding more advanced features like circuit breakers if needed for more sophisticated error handling.
+Let me know if you'd like further elaboration on any of the sections or need additional details!
