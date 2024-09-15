@@ -1,52 +1,45 @@
-Design for Batch Processing Based on GBID, File Channel, and Microservices
-1. Overview
-This design document outlines the approach to processing records for a batch associated with a given GBID. The system will:
 
-Retrieve the total number of expected records for the batch.
-Check how many records are already processed from a file channel.
-Retrieve the remaining records from a second microservice.
-Once all records are accounted for, call a translation service to further process the batch.
-2. Requirements
-Fetch Total Number of Records: Determine the total number of records expected for the batch associated with a GBID.
-File Channel Records: Retrieve the number of records already processed from a file channel.
-Processed Records from Microservice: Call the second microservice to get the remaining records (totalNumberOfExpectedRecords - fileChannelRecords).
-Translation Service: Once all records are processed, trigger the translation service to process the complete batch.
-3. Architecture
-The solution is divided into three main components:
+@Async("taskExecutor")
+public void trackProcessedRecords(String gbid, int expectedRecords) {
+    int retries = 0;
+    int maxRetries = 10;
+    int waitTime = 1000; // Start with 1 second
 
-First Microservice: Handles receiving the GBID, managing the flow, and triggering subsequent calls.
-File Channel Service: Provides the number of records that have already been processed.
-Second Microservice: Provides the number of remaining records.
-Translation Service: Processes the batch once all records have been collected.
-4. Design Components
-4.1 Step 1: Find Total Number of Records
-Method: The first microservice queries the system (database or another service) to retrieve the total number of expected records for the batch based on the GBID.
-Result: The total number of records is saved as totalNumberOfExpectedRecords.
-4.2 Step 2: Fetch Records from File Channel
-File Channel Service: The first microservice calls the file channel service to get the number of records that have already been processed.
-Result: The number of processed records from the file channel is saved as fileChannelRecords.
-4.3 Step 3: Fetch Remaining Records from Second Microservice
-Computation:
-Calculate the number of records expected from the second microservice as remainingRecords = totalNumberOfExpectedRecords - fileChannelRecords.
-Polling Mechanism:
-Poll the second microservice until it returns remainingRecords that have been processed.
-Use an exponential backoff strategy to avoid overloading the system with frequent requests.
-4.4 Step 4: Call Translation Service
-Condition: Once the total number of records (totalNumberOfExpectedRecords) is confirmed to be processed, the first microservice will call the translation service.
-Translation Service: The translation service processes the entire batch (all records) once they are gathered from the file channel and the second microservice.
-5. Workflow
-Receive GBID:
+    while (retries < maxRetries) {
+        try {
+            // Poll the second microservice for processed records
+            ResponseEntity<ProcessedRecordsResponse> response = restTemplate
+                .getForEntity("http://second-microservice/processed-records/" + gbid, ProcessedRecordsResponse.class);
 
-The first microservice receives the GBID and queries for totalNumberOfExpectedRecords.
-Fetch File Channel Records:
+            int processedRecords = response.getBody().getProcessedCount();
 
-Call the file channel service to get fileChannelRecords.
-Calculate Remaining Records:
+            if (processedRecords >= expectedRecords) {
+                // Once the expected records are processed, proceed to next step
+                proceedToNextStep(gbid);
+                break;
+            }
 
-Calculate remainingRecords = totalNumberOfExpectedRecords - fileChannelRecords.
-Poll Second Microservice:
+            // Exponential backoff before next poll
+            Thread.sleep(waitTime);
+            waitTime *= 2;
+            retries++;
 
-Poll the second microservice to get the remaining records. Keep polling until all the remainingRecords are processed.
-Trigger Translation Service:
+        } catch (Exception e) {
+            retries++;
+            // Handle failure, wait and retry
+            Thread.sleep(waitTime);
+            waitTime *= 2;
+        }
+    }
 
-Once all records (from both the file channel and the second microservice) are processed, call the translation service to further process the batch.
+    if (retries >= maxRetries) {
+        System.out.println("GBID " + gbid + " failed after " + maxRetries + " retries.");
+    }
+}
+
+public void proceedToNextStep(String gbid) {
+    // Logic to send the batch to another microservice or further processing
+    System.out.println("Proceeding with GBID " + gbid);
+    restTemplate.postForEntity("http://third-microservice/process-batch", gbid, String.class);
+}
+
