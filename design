@@ -1,82 +1,13 @@
-
-1. Define the Required Classes and Components
-Main Application Class: Enable scheduling by using @EnableScheduling.
-Service Class: Create a service class that will handle the scheduled task and process the batches.
-Rest Client: Use RestTemplate or WebClient to call the second microservice.
-List to Track Batches: Maintain a list of GBIDs that are being processed.
-2. Enable Scheduling
-Annotate the Spring Boot application class to enable scheduling.
-java
-Copy code
-@SpringBootApplication
-@EnableScheduling
-public class MyApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(MyApplication.class, args);
-    }
-}
-3. Create a Service Class for Polling
-Use the @Scheduled annotation to check the processing status at fixed intervals.
-Keep a list (pendingBatches) of GBIDs being processed and poll the second microservice until all records are processed.
-java
-Copy code
-@Service
-public class PollingService {
-
-    private final RestTemplate restTemplate = new RestTemplate();
-    private List<GBID> pendingBatches = new CopyOnWriteArrayList<>();
-
-    @Value("${second.microservice.url}")
-    private String secondMicroserviceUrl;
-
-    @Scheduled(fixedDelayString = "${polling.interval}")
-    public void checkProcessedRecords() {
-        for (GBID gbid : pendingBatches) {
-            int totalRecords = getTotalNumberOfExpectedRecords(gbid);
-            int fileChannelRecords = getFileChannelRecords(gbid);
-
-            // Poll second microservice for processed records
-            int processedRecords = restTemplate.getForObject(secondMicroserviceUrl + "/processed-records?gbid=" + gbid, Integer.class);
-
-            if (processedRecords == totalRecords - fileChannelRecords) {
-                // All records processed, remove GBID from pendingBatches and trigger next step
-                pendingBatches.remove(gbid);
-                callTranslationService(gbid);
-            }
-        }
-    }
-
-    public void addPendingBatch(GBID gbid) {
-        pendingBatches.add(gbid);
-    }
-
-    private int getTotalNumberOfExpectedRecords(GBID gbid) {
-        // Implement logic to fetch total records
-    }
-
-    private int getFileChannelRecords(GBID gbid) {
-        // Implement logic to fetch file channel records
-    }
-
-    private void callTranslationService(GBID gbid) {
-        // Call translation service for further processing
-    }
-}
-4. Configure Polling Interval
-In application.properties or application.yml, configure the polling interval in milliseconds.
-properties
-Copy code
-polling.interval=30000  # Poll every 30 seconds
-5. Adding and Removing GBIDs
-When a new batch arrives, add the GBID to the pendingBatches list.
-When all records for a batch are processed, remove the GBID from the list.
-java
-Copy code
-public void receiveNewBatch(GBID gbid) {
-    addPendingBatch(gbid);
-    // Additional logic to start processing
-}
-6. Exponential Backoff (Optional)
-Implement exponential backoff logic to dynamically adjust the polling interval if processing takes longer.
-7. Handle Multiple GBIDs
-The CopyOnWriteArrayList ensures thread-safe operations on the pendingBatches list, allowing multiple GBIDs to be processed simultaneously.
+SELECT conname AS constraint_name,
+       CASE contype
+         WHEN 'p' THEN 'PRIMARY KEY'
+         WHEN 'f' THEN 'FOREIGN KEY'
+         WHEN 'u' THEN 'UNIQUE'
+         WHEN 'c' THEN 'CHECK'
+       END AS constraint_type,
+       pg_catalog.pg_get_constraintdef(c.oid, true) AS constraint_definition
+FROM pg_constraint c
+JOIN pg_class t ON t.oid = c.conrelid
+JOIN pg_namespace n ON n.oid = t.relnamespace
+WHERE t.relname = '<table_name>'
+  AND n.nspname = 'public'; 
