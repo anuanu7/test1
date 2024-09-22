@@ -1,11 +1,17 @@
-<?xml version="1.0" encoding="UTF-8"?>
+--liquibase formatted sql
 
-<databaseChangeLog
-    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+-- changeset author:001
+CREATE TABLE user (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-    <include file="db/changelog/changesets/001-create-table.sql"/>
-    <include file="db/changelog/changesets/002-insert-data.sql"/>
-</databaseChangeLog>
+
+
+--liquibase formatted sql
+
+-- changeset author:002
+INSERT INTO user (name, email) VALUES ('John Doe', 'john.doe@example.com');
+
