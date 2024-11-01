@@ -1,15 +1,2 @@
-We’re encountering an ORA-01401 error, which indicates an attempt to insert a value that exceeds the column size limit in the ACT_RU_VARIABLE table within our Camunda setup. This table stores process variables, and it’s unclear which specific variable or task is causing the oversized data insertion.
-
-Current Findings:
-
-No direct code in the application explicitly setting large values into ACT_RU_VARIABLE was found.
-Potential sources of this issue include values being set via:
-Task forms, listeners, or embedded expressions in BPMN models
-Service tasks or external APIs
-Next Steps & Estimated Time:
-
-Enable SQL and Debug Logging: To capture details of the values being inserted and pinpoint the source.
-Review BPMN Models and Listeners: Inspect for automatic variable assignments and any potentially large data.
-Test with Controlled Data: Attempt to isolate specific fields or data elements that could be contributing to this issue.
-This process will take some time due to the need for thorough investigation, including log analysis, BPMN model inspection, and controlled testing to confirm the exact variable causing the issue.
-
+logging.level.org.springframework.jdbc.core=DEBUG
+logging.level.org.springframework.jdbc.core.StatementCreatorUtils=TRACE
