@@ -1,123 +1,15 @@
+We’re encountering an ORA-01401 error, which indicates an attempt to insert a value that exceeds the column size limit in the ACT_RU_VARIABLE table within our Camunda setup. This table stores process variables, and it’s unclear which specific variable or task is causing the oversized data insertion.
 
-- **What is Liquibase?**
-  - Liquibase is an open-source database change management tool.
-  - It tracks, manages, and applies database changes using **changelogs**.
-  - Helps in **version control for databases**, ensuring that multiple environments stay in sync.
+Current Findings:
 
-- **Why use Liquibase?**
-  - Consistent deployment of database changes.
-  - Track changes with version control (audit trail).
-  - Easily roll back problematic changes.
+No direct code in the application explicitly setting large values into ACT_RU_VARIABLE was found.
+Potential sources of this issue include values being set via:
+Task forms, listeners, or embedded expressions in BPMN models
+Service tasks or external APIs
+Next Steps & Estimated Time:
 
----
-
-### **2. How Liquibase Works (1-2 minutes)**
-- Liquibase uses **changelogs** to define the changes that should be applied to a database.
-- Each changelog contains **changesets** which define individual database operations like creating tables, inserting data, altering schema, etc.
-- Each changeset has a unique ID and author and is logged in the `DATABASECHANGELOG` table to ensure changes are not re-applied.
-
----
-
-### **3. Setting up Liquibase with Spring Boot (2 minutes)**
-1. **Add the Dependency**  
-   In your `pom.xml` (Maven):
-   ```xml
-   <dependency>
-       <groupId>org.liquibase</groupId>
-       <artifactId>liquibase-core</artifactId>
-   </dependency>
-   ```
-
-2. **Configure Liquibase**  
-   In `application.properties`:
-   ```properties
-   spring.datasource.url=jdbc:postgresql://localhost:5432/demo_db
-   spring.datasource.username=postgres
-   spring.datasource.password=yourpassword
-   spring.datasource.driver-class-name=org.postgresql.Driver
-   spring.liquibase.change-log=classpath:/db/changelog/db.changelog-master.xml
-   ```
-
-3. **Create Master ChangeLog**  
-   File location: `src/main/resources/db/changelog/db.changelog-master.xml`.
-   ```xml
-   <?xml version="1.0" encoding="UTF-8"?>
-
-   <databaseChangeLog
-       xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-           http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
-
-       <include file="db/changelog/changesets/001-create-table.sql"/>
-   </databaseChangeLog>
-   ```
-
----
-
-### **4. Demo: Applying a Database Change (2-3 minutes)**
-
-1. **Create the SQL ChangeSet**
-   Let's create a simple table named `users`. Save this file as `001-create-table.sql` under `db/changelog/changesets/`.
-
-   ```sql
-   --liquibase formatted sql
-
-   -- changeset demo_user:001
-   CREATE TABLE users (
-       id SERIAL PRIMARY KEY,
-       name VARCHAR(255) NOT NULL,
-       email VARCHAR(255) UNIQUE NOT NULL,
-       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-   );
-   ```
-
-2. **Run the Spring Boot Application**  
-   Run the app with:
-   ```
-   ./mvnw spring-boot:run
-   ```
-   Liquibase will automatically execute the SQL changeset on startup.
-
-3. **Verify Database Changes**  
-   Show the newly created `users` table in your database:
-   ```sql
-   SELECT * FROM users;
-   ```
-
-4. **Check the `DATABASECHANGELOG` Table**  
-   This table records the applied changesets. Show how it tracks the ID, author, and timestamp of applied changes.
-
-   ```sql
-   SELECT * FROM DATABASECHANGELOG;
-   ```
-
----
-
-### **5. Rollback Changes (Optional: 1 minute)**
-If you have time, demonstrate how to rollback a changeset.
-
-1. **Command for Rollback** (In case you manually want to rollback):
-   ```bash
-   ./mvnw liquibase:rollback -Dliquibase.rollbackCount=1
-   ```
-
-2. Show how the `users` table is dropped and removed from the database, demonstrating the power of Liquibase's rollback feature.
-
----
-
-
-- **Key Benefits**:
-  - Sync databases across environments.
-  - Manage database schema changes with confidence.
-  - Rollback changes when needed.
-
----
-
-### **Bonus Tip:**
-Prepare your database and environment in advance, so you can focus on showing Liquibase functionality smoothly during the demo.
-
----
-
-### **Good luck!**
+Enable SQL and Debug Logging: To capture details of the values being inserted and pinpoint the source.
+Review BPMN Models and Listeners: Inspect for automatic variable assignments and any potentially large data.
+Test with Controlled Data: Attempt to isolate specific fields or data elements that could be contributing to this issue.
+This process will take some time due to the need for thorough investigation, including log analysis, BPMN model inspection, and controlled testing to confirm the exact variable causing the issue.
 
