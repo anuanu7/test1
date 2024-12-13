@@ -1,2 +1,1 @@
-logging.level.org.springframework.jdbc.core=DEBUG
-logging.level.org.springframework.jdbc.core.StatementCreatorUtils=TRACE
+RestTemplate + @Retryable is the most suitable option as it integrates easily with our existing synchronous, blocking I/O model without introducing complexity. It allows us to implement retry logic declaratively using simple annotations and provides straightforward fallback handling with @Recover
