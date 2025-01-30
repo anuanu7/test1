@@ -36,9 +36,9 @@ public class LiquibaseChangelogGenerator implements CommandLineRunner {
 
 
 
-import liquibase.Contexts;
-import liquibase.LabelExpression;
-import liquibase.Liquibase;
+import liquibase.Scope;
+import liquibase.command.CommandScope;
+import liquibase.command.core.GenerateChangelogCommandStep;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
@@ -65,15 +65,13 @@ public class LiquibaseRunner implements CommandLineRunner {
             // Create a Liquibase database object
             Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
 
-            // Initialize Liquibase
-            Liquibase liquibase = new Liquibase(
-                "db/changelog/db.changelog-master.xml", // Path to the changelog file
-                new ClassLoaderResourceAccessor(),      // Resource accessor
-                database                                // Database object
-            );
+            // Set up the command to generate the changelog
+            CommandScope generateChangelogCommand = new CommandScope("generateChangelog");
+            generateChangelogCommand.addArgumentValue(GenerateChangelogCommandStep.CHANGELOG_FILE_ARG, "db/changelog/generated-changelog.xml");
+            generateChangelogCommand.addArgumentValue(GenerateChangelogCommandStep.DATABASE_ARG, database);
 
-            // Generate the changelog for the existing database state
-            liquibase.generateChangeLog("db/changelog/generated-changelog.xml", new Contexts(), new LabelExpression());
+            // Execute the command
+            generateChangelogCommand.execute();
 
             System.out.println("Changelog generated successfully!");
         }
