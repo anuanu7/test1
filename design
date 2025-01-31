@@ -77,3 +77,4 @@ public class LiquibaseRunner implements CommandLineRunner {
         }
     }
 }
+Code reviews are a great opportunity for learning and collaboration. Instead of just approving changes quickly, take a moment to read and understand the code. It helps ensure quality and also gives insight into what others are working on. This way, we all grow together as a team
