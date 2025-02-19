@@ -79,3 +79,20 @@ public class LiquibaseRunner implements CommandLineRunner {
 }
 To make testing more efficient, it would help if tickets are not overly dependent on multiple services. Instead of handling large, complex tickets, breaking them down into smaller, manageable pieces will allow us to develop and test faster
 generateChangelogCommand.addArgumentValue("diffTypes", "tables,views,columns,indexes,foreignkeys,primarykeys,uniqueconstraints,functions");
+<dependency>
+    <groupId>org.webjars</groupId>
+    <artifactId>webjars-locator-core</artifactId>
+    <version>0.52</version>
+    <exclusions>
+        <exclusion>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+
+<dependency>
+    <groupId>io.github.classgraph</groupId>
+    <artifactId>classgraph</artifactId>
+    <version>4.8.83</version>  <!-- Adjust based on compatibility -->
+</dependency>
