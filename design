@@ -1,98 +1,24 @@
-import liquibase.Liquibase;
-import liquibase.database.Database;
-import liquibase.database.DatabaseFactory;
-import liquibase.integration.spring.SpringLiquibase;
-import liquibase.resource.FileSystemResourceAccessor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
+Microservice1
 
-import javax.sql.DataSource;
-import java.sql.Connection;
+Listen to PSN incoming Mq
+Store the meta data (txn_trigger_data)
+Validation(Check Ack Level) (txn_tracking_data)
+Batch PSN (Check all transactions Received)
+Update Batch status(psn_batch_status) Consumed
+Fetch Customer preferences
+Put the required information on new mq to be consumed by 2nd microservice
 
-@Component
-@Profile("local")
-public class LiquibaseChangelogGenerator implements CommandLineRunner {
-
-    @Autowired
-    private DataSource dataSource;
-
-    @Override
-    public void run(String... args) throws Exception {
-        try (Connection connection = dataSource.getConnection()) {
-            Database database = DatabaseFactory.getInstance()
-                    .findCorrectDatabaseImplementation(new liquibase.database.jvm.JdbcConnection(connection));
-            Liquibase liquibase = new Liquibase(
-                    "src/main/resources/db/changelog/db.changelog-master.xml",
-                    new FileSystemResourceAccessor(),
-                    database
-            );
-            liquibase.generateChangeLog(new liquibase.structure.core.CatalogAndSchema(null, null), null, null, null);
-            System.out.println("Changelog generated successfully.");
-        }
-    }
-}
-
-
-
-import liquibase.Scope;
-import liquibase.command.CommandScope;
-import liquibase.command.core.GenerateChangelogCommandStep;
-import liquibase.database.Database;
-import liquibase.database.DatabaseFactory;
-import liquibase.database.jvm.JdbcConnection;
-import liquibase.resource.ClassLoaderResourceAccessor;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
-
-import javax.sql.DataSource;
-import java.sql.Connection;
-
-@Component
-public class LiquibaseRunner implements CommandLineRunner {
-
-    private final DataSource dataSource;
-
-    public LiquibaseRunner(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
-
-    @Override
-    public void run(String... args) throws Exception {
-        // Establish a database connection
-        try (Connection connection = dataSource.getConnection()) {
-            // Create a Liquibase database object
-            Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
-
-            // Set up the command to generate the changelog
-            CommandScope generateChangelogCommand = new CommandScope("generateChangelog");
-            generateChangelogCommand.addArgumentValue(GenerateChangelogCommandStep.CHANGELOG_FILE_ARG, "db/changelog/generated-changelog.xml");
-            generateChangelogCommand.addArgumentValue(GenerateChangelogCommandStep.DATABASE_ARG, database);
-
-            // Execute the command
-            generateChangelogCommand.execute();
-
-            System.out.println("Changelog generated successfully!");
-        }
-    }
-}
-To make testing more efficient, it would help if tickets are not overly dependent on multiple services. Instead of handling large, complex tickets, breaking them down into smaller, manageable pieces will allow us to develop and test faster
-generateChangelogCommand.addArgumentValue("diffTypes", "tables,views,columns,indexes,foreignkeys,primarykeys,uniqueconstraints,functions");
-<dependency>
-    <groupId>org.webjars</groupId>
-    <artifactId>webjars-locator-core</artifactId>
-    <version>0.52</version>
-    <exclusions>
-        <exclusion>
-            <groupId>io.github.classgraph</groupId>
-            <artifactId>classgraph</artifactId>
-        </exclusion>
-    </exclusions>
-</dependency>
-
-<dependency>
-    <groupId>io.github.classgraph</groupId>
-    <artifactId>classgraph</artifactId>
-    <version>4.8.83</version>  <!-- Adjust based on compatibility -->
-</dependency>
+Microservice 2
+Listen to incoming MQ
+Based on transaction/batch level and bulking preferences
+NotOpted for Bulking
+1.	If transaction level  and  create required metadata and put on MQ for translation
+2.	If batch level wait for all transactions in batch, once received all transactions put on Mq for translation
+3.	Update Batch status to Dispatched
+4.	When translation complete listen to the MQ and update txn_psn_batch_status
+5.	Trigger workflow(put mq message)
+Opted For Bulking
+1.	Create translation request with interval name and relavent data
+2.	If transaction level  and  create required metadata and put on MQ for translation
+3.	If batch level wait for all transactions in batch, once received all transactions put on Mq for translation
+4.	When translation complete listen to the MQ and update 
