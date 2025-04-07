@@ -1,24 +1,9 @@
-Microservice1
+ Functional Responsibilities
+List the core functionalities the microservice is responsible for.
 
-Listen to PSN incoming Mq
-Store the meta data (txn_trigger_data)
-Validation(Check Ack Level) (txn_tracking_data)
-Batch PSN (Check all transactions Received)
-Update Batch status(psn_batch_status) Consumed
-Fetch Customer preferences
-Put the required information on new mq to be consumed by 2nd microservice
-
-Microservice 2
-Listen to incoming MQ
-Based on transaction/batch level and bulking preferences
-NotOpted for Bulking
-1.	If transaction level  and  create required metadata and put on MQ for translation
-2.	If batch level wait for all transactions in batch, once received all transactions put on Mq for translation
-3.	Update Batch status to Dispatched
-4.	When translation complete listen to the MQ and update txn_psn_batch_status
-5.	Trigger workflow(put mq message)
-Opted For Bulking
-1.	Create translation request with interval name and relavent data
-2.	If transaction level  and  create required metadata and put on MQ for translation
-3.	If batch level wait for all transactions in batch, once received all transactions put on Mq for translation
-4.	When translation complete listen to the MQ and update 
+Responsibility	Description
+Consume Event A	Listen to queue/topic X, process incoming messages
+Validate Payload	Validate required fields, business rules
+Transform & Enrich	Add metadata or enrich with DB/external call
+Produce Event B	Publish result to topic Y
+Persist Data	Save/update to DB if needed
