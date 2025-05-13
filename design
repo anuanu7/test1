@@ -15,3 +15,8 @@ String expectedJson = new String(
               .readAllBytes(),
     StandardCharsets.UTF_8
 );
+
+assertTrue("Expected exact match but got:\n" +
+    "Expected JSON:\n" + expectedJson + "\n" +
+    "Actual JSON:\n" + event.getRequest().getBodyAsString(),
+    match.isExactMatch());
