@@ -7,3 +7,11 @@ Validate Payload	Validate required fields, business rules
 Transform & Enrich	Add metadata or enrich with DB/external call
 Produce Event B	Publish result to topic Y
 Persist Data	Save/update to DB if needed
+
+
+String expectedJson = new String(
+    getClass().getClassLoader()
+              .getResourceAsStream("__files/expected/txn_1723126284686_rawpsn_expected.json")
+              .readAllBytes(),
+    StandardCharsets.UTF_8
+);
