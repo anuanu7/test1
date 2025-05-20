@@ -1,22 +1,41 @@
- Functional Responsibilities
-List the core functionalities the microservice is responsible for.
+import http from 'k6/http';
+import { check } from 'k6';
 
-Responsibility	Description
-Consume Event A	Listen to queue/topic X, process incoming messages
-Validate Payload	Validate required fields, business rules
-Transform & Enrich	Add metadata or enrich with DB/external call
-Produce Event B	Publish result to topic Y
-Persist Data	Save/update to DB if needed
+const BASE_URL = __ENV.BASE_URL;
+const headers = {
+  'Authorization': `Bearer ${__ENV.TOKEN}`,
+  'Content-Type': 'application/json',
+};
 
+export function testGetCustChannelRef() {
+  const payload = JSON.stringify({
+    physDestType: 'BRANCH',          // Example value, replace as needed
+    physDestination: 'NYC-MIDTOWN'   // Example value, replace as needed
+  });
 
-String expectedJson = new String(
-    getClass().getClassLoader()
-              .getResourceAsStream("__files/expected/txn_1723126284686_rawpsn_expected.json")
-              .readAllBytes(),
-    StandardCharsets.UTF_8
-);
+  const res = http.post(`${BASE_URL}/getCustChannelRefForPhysDest`, payload, { headers });
 
-assertTrue("Expected exact match but got:\n" +
-    "Expected JSON:\n" + expectedJson + "\n" +
-    "Actual JSON:\n" + event.getRequest().getBodyAsString(),
-    match.isExactMatch());
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+    'response has channelRef': (r) => r.body.includes('channelRef'),
+    'response has status': (r) => r.body.includes('status'),
+  });
+
+  // Optional: log some values for debug
+  // console.log(res.body);
+}
+
+import { testGetCustChannelRef } from './modules/getCustChannelRef.js';
+import { sleep } from 'k6';
+
+export let options = {
+  vus: 10,
+  iterations: 50,
+};
+
+export default function () {
+  testGetCustChannelRef();
+  sleep(1);
+}
+
+k6 run test.js --env BASE_URL=https://your-api.com --env TOKEN=your_jwt_here
