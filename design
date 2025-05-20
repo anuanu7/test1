@@ -39,3 +39,7 @@ export default function () {
 }
 
 k6 run test.js --env BASE_URL=https://your-api.com --env TOKEN=your_jwt_here
+
+export const BASE_URL = 'https://your-api.com';
+export const TOKEN = 'your_jwt_token_here';
+
