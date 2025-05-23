@@ -1,28 +1,28 @@
 import http from 'k6/http';
 import { check } from 'k6';
 import { SharedArray } from 'k6/data';
+import { BASE_URL } from '../config.js';
 
+// Load customer IDs from text file
 const custIds = new SharedArray('Customer IDs', () =>
-  open('../data/customer_ids.txt').trim().split('\n').map(id => id.trim())
+  open('../data/customer_ids.txt')
+    .trim()
+    .split('\n')
+    .map(id => id.trim())
 );
 
-export function testGetPaymentPref(token) {
+export function testGetPSNPPreferences(token) {
   const custId = custIds[Math.floor(Math.random() * custIds.length)];
 
   const headers = {
-    'iam-claimsetjwt': token,  // ✅ Custom header instead of Authorization
+    'iam-claimsetjwt': token,
     'Accept': 'application/json',
   };
 
-  const url = `https://bdd-ms-customer-process-service-dev2.edi01-apps.dev-pcf.lb4.pbsgrp.net/getPaymentPref/${custId}`;
-
-  const res = http.get(url, { headers });
+  const res = http.get(`${BASE_URL}/v1/getPSNPPreferences/${custId}`, { headers });
 
   check(res, {
     'status is 200': (r) => r.status === 200,
-    'has custId': (r) => r.body.includes('"custId"'),
+    'has PSNP data': (r) => r.body && r.body.length > 0,
   });
 }
-console.log(`custId: ${custId}`);
-console.log(`token: ${token.slice(0, 20)}...`);
-console.log(JSON.stringify(res, null, 2));
