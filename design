@@ -1,64 +1,11 @@
-# 🧪 k6 Performance Tests – Customer Service APIs
+POC Update – k6 Performance Testing
+Set up a modular performance testing framework using k6 for customer service APIs.
 
-This project contains performance tests for microservice APIs using [k6](https://k6.io/).  
-Tests include dynamic JWT authentication and support multiple API endpoints.
+Integrated dynamic JWT token generation via JWT utility and custom header (iam-claimsetjwt).
 
----
+Implemented and validated test cases for key endpoints:
+/getPaymentPref, /getCustChannelRefForPhysDest, /getPSNPreferences.
 
-## 📦 Project Structure
+Used data-driven testing via customer_ids.txt with SharedArray.
 
-k6-tests/
-├── data/
-│ └── customer_ids.txt # List of valid customer IDs (one per line)
-├── modules/
-│ ├── getPaymentPref.js # Test for /getPaymentPref/{custId}
-│ ├── getCustChannelRef.js # Test for /getCustChannelRefForPhysDest
-│ └── getPSNPPreferences.js # Test for /getPSNPPreferences/{custId}
-├── config.js # Common config (e.g., BASE_URL)
-└── main.js # Entry point with JWT setup and test orchestration
-
-🔐 JWT Authentication
-Tokens are dynamically generated before the test run via:
-
-POST https://bdd-ms-mssdk-jwt-utility-dev2.edi01-apps.dev-pcf.lb4.pbsgrp.net/jwtutility/jwt
-
-How to Run the Tests
-Run all tests from the root directory:
-
-bash
-Copy
-Edit
-k6 run main.js
-This will:
-
-Fetch a valid JWT
-
-Read customer IDs from data/customer_ids.txt
-
-Call all test modules in sequence:
-
-getPaymentPref
-
-getCustChannelRef
-
-getPSNPPreferences
-
-🧪 Adding New Tests
-Create a new module in modules/
-
-Define and export a test function that accepts the token
-
-Import and call it from main.js
-
-Example:
-
-
-import { testNewEndpoint } from './modules/testNewEndpoint.js';
-
-export default function (data) {
-  testNewEndpoint(data.token);
-}
-Notes
-Tokens are passed via custom header iam-claimsetjwt
-
-You can modify headers, endpoints, or test data as needed
+Added a README with setup instructions, test execution guide, and project structure.
