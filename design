@@ -23,3 +23,6 @@ export function testGetPaymentPref(token) {
     'has custId': (r) => r.body.includes('"custId"'),
   });
 }
+console.log(`custId: ${custId}`);
+console.log(`token: ${token.slice(0, 20)}...`);
+console.log(JSON.stringify(res, null, 2));
