@@ -1,28 +1,24 @@
 import http from 'k6/http';
-import { check } from 'k6';
-import { BASE_URL, TOKEN } from '../config.js';
-import { SharedArray } from 'k6/data';
 
-// Load from data/customer_ids.txt
-const custIds = new SharedArray('Customer IDs', () =>
-  open('./data/customer_ids.txt')  // ⬅️ adjust path here
-    .trim()
-    .split('\n')
-    .map(id => id.trim())
-);
-
-export function testGetPaymentPref() {
-  const custId = custIds[Math.floor(Math.random() * custIds.length)];
-
-  const headers = {
-    'Authorization': `Bearer ${TOKEN}`,
-    'Accept': 'application/json',
-  };
-
-  const res = http.get(`${BASE_URL}/getPaymentPref/${custId}`, { headers });
-
-  check(res, {
-    'status is 200': (r) => r.status === 200,
-    'has custId in response': (r) => r.body.includes('"custId"'),
+export function setup() {
+  const payload = JSON.stringify({
+    alg: "RS256",
+    typ: "JWT",
+    aud: "rbsg.banklinedirectdigital.pre-prd.bdd-ms-customer-process",
+    exp: Math.floor(Date.now() / 1000) + 3600  // valid for 1 hour
   });
+
+  const url = 'https://bdd-ms-mssdk-jwt-utility-dev2.edi01-apps.dev-pcf.lb4.pbsgrp.net/jwtutility/jwt';
+
+  const res = http.post(url, payload, {
+    headers: { 'Content-Type': 'application/json' }
+  });
+
+  if (res.status !== 200) {
+    throw new Error(`Failed to generate JWT token. Status: ${res.status}, Body: ${res.body}`);
+  }
+
+  console.log("✅ Token generated successfully");
+
+  return { token: res.body };
 }
