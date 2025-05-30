@@ -1,11 +1,12 @@
-POC Update – k6 Performance Testing
-Set up a modular performance testing framework using k6 for customer service APIs.
+stages:
+  - performance-test
 
-Integrated dynamic JWT token generation via JWT utility and custom header (iam-claimsetjwt).
-
-Implemented and validated test cases for key endpoints:
-/getPaymentPref, /getCustChannelRefForPhysDest, /getPSNPreferences.
-
-Used data-driven testing via customer_ids.txt with SharedArray.
-
-Added a README with setup instructions, test execution guide, and project structure.
+k6_performance_test:
+  stage: performance-test
+  script:
+    - curl -s https://dl.k6.io/key.gpg | sudo apt-key add -
+    - echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+    - sudo apt update
+    - sudo apt install -y k6
+    - k6 version
+    - k6 run main.js
