@@ -4,9 +4,13 @@ stages:
 k6_performance_test:
   stage: performance-test
   script:
-    - curl -s https://dl.k6.io/key.gpg | sudo apt-key add -
-    - echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
-    - sudo apt update
-    - sudo apt install -y k6
-    - k6 version
-    - k6 run main.js
+    - echo "Running k6 performance test..."
+    - k6 run --summary-export=result.json main.js
+  artifacts:
+    when: always
+    paths:
+      - result.json
+    expire_in: 1 day
+  only:
+    - main  # or replace with your working branch
+
