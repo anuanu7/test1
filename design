@@ -1,41 +1,40 @@
 📘 k6 Performance Testing POC – Customer Services APIs
-🧠 What is k6?
-k6 is an open-source, developer-centric tool for performance testing and load testing of APIs, written in JavaScript.
-It is designed for automation, CI/CD integration, and simulating realistic user traffic at scale.
+What is k6
+k6 is an open-source tool for performance and load testing of APIs. It allows you to write test scenarios in JavaScript, simulate multiple virtual users (VUs), and integrate tests into CI/CD pipelines like GitLab. It's lightweight, developer-friendly, and ideal for automation.
 
-🎯 POC Objective
-Evaluate k6 for API performance/load testing
+POC Objective
+Evaluate k6 for performance testing of microservices
 
-Handle JWT-based authentication dynamically
+Implement dynamic JWT-based authentication
 
-Test multiple microservice endpoints with real customer data
+Simulate authenticated API calls with real customer data
 
-Run tests locally and in GitLab CI pipelines
+Run tests both locally and via GitLab CI
 
-Establish a modular, reusable testing framework
+Build a modular, maintainable test framework
 
-📁 Project Structure
+Project Structure
 kotlin
 Copy
 Edit
 k6-tests/
-├── main.js               → Orchestrator: token setup + test flow
-├── config.js             → Shared config (BASE_URL, constants)
+├── main.js               → Orchestrator: token generation + test execution
+├── config.js             → Shared constants (BASE_URL)
 ├── data/
-│   └── customer_ids.txt  → Test data: list of valid customer IDs
+│   └── customer_ids.txt  → Customer ID inputs for data-driven tests
 ├── modules/
 │   ├── getPaymentPref.js
 │   ├── getCustChannelRef.js
 │   └── getPSNPreferences.js
-└── README.md             → Setup instructions and usage guide
-🔐 JWT Token Handling
-Tokens are generated at runtime from JWT utility API:
+└── README.md             → Documentation and usage guide
+JWT Token Handling
+Token is generated dynamically before test execution using a POST request:
 
-bash
+nginx
 Copy
 Edit
-POST /jwtutility/jwt
-Payload includes:
+POST https://.../jwtutility/jwt
+Request payload includes:
 
 alg: RS256
 
@@ -43,27 +42,27 @@ typ: JWT
 
 aud: rbsg.banklinedirectdigital.pre-prd.bdd-ms-customer-process
 
-exp: set to 1 hour from now
+exp: 1 hour from now
 
-Tokens are passed in custom header:
+Token is passed in each API call using:
 
-makefile
+css
 Copy
 Edit
-iam-claimsetjwt: <token>
-🔍 Endpoints Covered
-Endpoint	Method	Auth	Description
-/getPaymentPref/{custId}	GET	✅	Fetches payment preferences
-/getCustChannelRefForPhysDest	POST	✅	Requires payload with destination
-/v1/getPSNPreferences/{custId}	GET	✅	Returns PSNP preferences for a customer
+Header: iam-claimsetjwt
+APIs Covered in the Test
+Endpoint	Method	Authentication	Description
+/getPaymentPref/{custId}	GET	Yes	Returns customer payment preferences
+/getCustChannelRefForPhysDest	POST	Yes	Accepts JSON payload to resolve channel reference
+/v1/getPSNPreferences/{custId}	GET	Yes	Fetches PSNP preferences for a customer
 
-🧪 Test Execution
-▶️ Local Execution
+Test Execution
+Running Locally
 bash
 Copy
 Edit
 k6 run main.js
-⚙️ GitLab CI Job Snippet
+Running in GitLab CI
 yaml
 Copy
 Edit
@@ -72,10 +71,10 @@ script:
 artifacts:
   paths:
     - result.json
-✅ result.json captures test metrics for reporting
+The results are exported to result.json for downstream analysis or archiving.
 
-📊 Sample Output Summary
-text
+Sample Test Output
+yaml
 Copy
 Edit
 ✓ status is 200 ....................: 100%
@@ -84,28 +83,27 @@ http_req_duration .................: avg=42ms, p(95)=63ms
 http_req_failed ...................: 0.00%
 iterations ........................: 50
 vus ...............................: 10
-🔍 Observations
-✅ Dynamic JWT authentication works reliably across modules
+Observations
+Dynamic JWT authentication worked reliably across all endpoints
 
-✅ Endpoints respond within acceptable latency (~40–60ms)
+All endpoints returned expected responses with low latency
 
-✅ Modular JS test files improve maintainability
+Modular design makes it easy to scale and add new tests
 
-❌ Initial test failures due to invalid custIds – resolved using curated dataset
+Some initial test failures were due to invalid test data, resolved with a curated customer_ids.txt
 
-🚀 Next Steps
-Add SLA thresholds (e.g., 95% of requests under 100ms)
+Next Steps
+Add performance thresholds for SLA enforcement (e.g., 95% of requests < 100ms)
 
-Integrate with Grafana via InfluxDB or JSON upload
+Integrate with monitoring (e.g., Grafana via InfluxDB)
 
 Automate test execution post-deploy via GitLab
 
-Extend test suite to additional services
+Expand test coverage to additional services
 
-🔗 Related Links
-📁 GitLab Repo
+Related Resources
+GitLab Repository: (Add link here)
 
-🔐 JWT Utility API Spec
+JWT Utility API: (Add link if documented)
 
-📖 k6 Docs
-
+k6 Documentation: https://k6.io/docs
