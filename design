@@ -1,16 +1,111 @@
-stages:
-  - performance-test
+📘 k6 Performance Testing POC – Customer Services APIs
+🧠 What is k6?
+k6 is an open-source, developer-centric tool for performance testing and load testing of APIs, written in JavaScript.
+It is designed for automation, CI/CD integration, and simulating realistic user traffic at scale.
 
-k6_performance_test:
-  stage: performance-test
-  script:
-    - echo "Running k6 performance test..."
-    - k6 run --summary-export=result.json main.js
-  artifacts:
-    when: always
-    paths:
-      - result.json
-    expire_in: 1 day
-  only:
-    - main  # or replace with your working branch
+🎯 POC Objective
+Evaluate k6 for API performance/load testing
+
+Handle JWT-based authentication dynamically
+
+Test multiple microservice endpoints with real customer data
+
+Run tests locally and in GitLab CI pipelines
+
+Establish a modular, reusable testing framework
+
+📁 Project Structure
+kotlin
+Copy
+Edit
+k6-tests/
+├── main.js               → Orchestrator: token setup + test flow
+├── config.js             → Shared config (BASE_URL, constants)
+├── data/
+│   └── customer_ids.txt  → Test data: list of valid customer IDs
+├── modules/
+│   ├── getPaymentPref.js
+│   ├── getCustChannelRef.js
+│   └── getPSNPreferences.js
+└── README.md             → Setup instructions and usage guide
+🔐 JWT Token Handling
+Tokens are generated at runtime from JWT utility API:
+
+bash
+Copy
+Edit
+POST /jwtutility/jwt
+Payload includes:
+
+alg: RS256
+
+typ: JWT
+
+aud: rbsg.banklinedirectdigital.pre-prd.bdd-ms-customer-process
+
+exp: set to 1 hour from now
+
+Tokens are passed in custom header:
+
+makefile
+Copy
+Edit
+iam-claimsetjwt: <token>
+🔍 Endpoints Covered
+Endpoint	Method	Auth	Description
+/getPaymentPref/{custId}	GET	✅	Fetches payment preferences
+/getCustChannelRefForPhysDest	POST	✅	Requires payload with destination
+/v1/getPSNPreferences/{custId}	GET	✅	Returns PSNP preferences for a customer
+
+🧪 Test Execution
+▶️ Local Execution
+bash
+Copy
+Edit
+k6 run main.js
+⚙️ GitLab CI Job Snippet
+yaml
+Copy
+Edit
+script:
+  - k6 run --summary-export=result.json main.js
+artifacts:
+  paths:
+    - result.json
+✅ result.json captures test metrics for reporting
+
+📊 Sample Output Summary
+text
+Copy
+Edit
+✓ status is 200 ....................: 100%
+✓ response includes custId ........: 100%
+http_req_duration .................: avg=42ms, p(95)=63ms
+http_req_failed ...................: 0.00%
+iterations ........................: 50
+vus ...............................: 10
+🔍 Observations
+✅ Dynamic JWT authentication works reliably across modules
+
+✅ Endpoints respond within acceptable latency (~40–60ms)
+
+✅ Modular JS test files improve maintainability
+
+❌ Initial test failures due to invalid custIds – resolved using curated dataset
+
+🚀 Next Steps
+Add SLA thresholds (e.g., 95% of requests under 100ms)
+
+Integrate with Grafana via InfluxDB or JSON upload
+
+Automate test execution post-deploy via GitLab
+
+Extend test suite to additional services
+
+🔗 Related Links
+📁 GitLab Repo
+
+🔐 JWT Utility API Spec
+
+📖 k6 Docs
 
