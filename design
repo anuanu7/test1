@@ -1,2 +1,62 @@
-git clone https://github.com/JoseLuisSR/mqmeter.git
-cd mqmeter
+SELECT DISTINCT 
+    pymt_file_data.to_fininstnid_bicfi            AS frFinInstnIdBicfi,
+    pymt_file_data.msg_id                         AS orgnlMsgId,
+    pymt_file_data.msg_def_idr                    AS orgnlMsgNmId,
+    pymt_file_data.file_data_seq                  AS fileDataSeq,
+    pymt_txn_data.cdtrtrfxtninf_uetr              AS cdtrTrfxtnInfUetr,
+    pymt_txn_data.CUST_ID                         AS custId,
+    pymt_txn_data.cust_payment_ref                AS custPaymentReference,
+    pymt_txn_data.cdtrtrfxtninf_svcvl_cd          AS serviceLevelCode,
+    pymt_txn_data.cdtrtrfxtninf_instdamt_ccy      AS cdtrTrfxtnInfInstdamtCcy,
+    pymt_txn_data.cdtrtrfxtninf_instdamt          AS cdtrTrfxtnInfInstdamt,
+    pymt_txn_data.cdtrtrfxtninf_ctgypurp_cd       AS orgnlTxRefCtgypurpCtry,
+    pymt_txn_data.PURPOSE_CD                      AS orgnlTxRefPurpCd,
+    pymt_txn_data.PURPOSE_PRTRY                   AS orgnlTxRefPurpPrtry,
+    pymt_txn_data.CDTRTRFEXTINE_ENDTOENDID        AS orgnlEndToEndId,
+    pymt_txn_data.CDTRTRFEXTINE_INSTRID           AS orgnlInstrId,
+    pymt_txn_data.CDTRTRFEXTINE_INTRBKSTTLAMT     AS orgnlTxRefIntrBkSttlmAmt,
+    pymt_txn_data.CDTRTRFEXTINE_INTRBKSTTLAMT_CCY AS orgnlTxRefIntrBkSttlmAmtCcy,
+    TO_CHAR(pymt_txn_data.CDTRTRFEXTINE_INTRBKSTTLM_DT, 'YYYY-MM-DD') AS orgnlTxRefIntrBkSttlmDt,
+    pymt_batch_data.PMT_INF_SVCVL_CD              AS orgnlTxRefSvcLvlCd,
+    pymt_batch_data.PMT_INF_CTGYPURP_CD           AS orgnlTxRefCtgypurpCd,
+    pymt_batch_data.PMT_INF_NBOFTXS               AS orgnlNbOfTxs,
+    pymt_batch_data.PMT_INF_CTRLSUM               AS orgnlCtrlSum,
+    pymt_batch_data.PMT_INF_ID                    AS orgnlPmtInfId,
+    pymt_batch_data.PMT_INF_MTD                   AS orgnlTxRefPmtMtd,
+    pymt_batch_data.global_batch_id               AS gbId,
+    pymt_batch_data.PMT_INF_LCLINSTRM_CD          AS orgnlTxRefLclInstrmCd,
+    TO_CHAR(pymt_batch_data.REQ_EXCTN_DT, 'DDMMYYYY') AS orgnlTxRefReqdExctnDt,
+    pymt_txn_data.reqd_exctn_dt                   AS creditDate,
+    first_remit_info.CDTRREFINF_REFERENCE         AS orgnlTxRefCdtrRefInfRef,
+    first_remit_info.RMTINF_USTRD                 AS orgnlTxRefRmtInfUstrd,
+    first_remit_info.CDTRREFINF_CD                AS orgnlTxRefCdOrPrtryCd,
+    first_remit_info.CDTRREFINF_ISSUER            AS orgnlTxRefTpIssr,
+    first_remit_info.CDTRREFINF_REFERENCE         AS beneficiaryReference
+
+FROM PYMT_TXN_DATA pymt_txn_data
+INNER JOIN BATCH_TRANSACTION_MAPPING batch_transaction_mapping 
+    ON batch_transaction_mapping.TXN_SEQ = pymt_txn_data.TXN_SEQ
+INNER JOIN PYMT_BATCH_DATA pymt_batch_data 
+    ON pymt_batch_data.BATCH_SEQ = batch_transaction_mapping.BATCH_SEQ
+INNER JOIN BATCH_PARTY_MAPPING batch_party_mapping 
+    ON pymt_batch_data.BATCH_SEQ = batch_party_mapping.BATCH_SEQ
+INNER JOIN FILE_BATCH_MAPPING file_batch_mapping 
+    ON file_batch_mapping.BATCH_SEQ = batch_party_mapping.BATCH_SEQ
+INNER JOIN PYMT_FILE_DATA pymt_file_data 
+    ON pymt_file_data.FILE_SEQ = file_batch_mapping.FILE_SEQ
+LEFT OUTER JOIN TRANSACTION_REMIT_INFO_MAPPING txn_remit_mapping 
+    ON txn_remit_mapping.TXN_SEQ = pymt_txn_data.TXN_SEQ
+LEFT OUTER JOIN (
+    SELECT *
+    FROM (
+        SELECT ri.*, rim.TXN_SEQ,
+               ROW_NUMBER() OVER (PARTITION BY rim.TXN_SEQ ORDER BY ri.RMTINF_SEQ) AS rn
+        FROM REMIT_INFO ri
+        JOIN TRANSACTION_REMIT_INFO_MAPPING rim
+          ON ri.RMTINF_SEQ = rim.RMTINF_SEQ
+    )
+    WHERE rn = 1
+) first_remit_info 
+    ON first_remit_info.TXN_SEQ = pymt_txn_data.TXN_SEQ
+
+WHERE pymt_txn_data.GLOBAL_TRANS_ID = :globalTransId
