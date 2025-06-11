@@ -60,3 +60,9 @@ LEFT OUTER JOIN (
     ON first_remit_info.TXN_SEQ = pymt_txn_data.TXN_SEQ
 
 WHERE pymt_txn_data.GLOBAL_TRANS_ID = :globalTransId
+
+
+.stream()
+.sorted(Comparator.comparing(FileChannelTransactionDetails::getRmtinfSeq)) // or your preferred field
+.findFirst()
+
