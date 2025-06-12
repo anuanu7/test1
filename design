@@ -66,3 +66,4 @@ WHERE pymt_txn_data.GLOBAL_TRANS_ID = :globalTransId
 .sorted(Comparator.comparing(FileChannelTransactionDetails::getRmtinfSeq)) // or your preferred field
 .findFirst()
 
+ORDER BY remit_info.RMTINF_SEQ ASC
