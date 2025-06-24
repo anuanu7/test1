@@ -64,6 +64,8 @@ WHERE pymt_txn_data.GLOBAL_TRANS_ID = :globalTransId
 
 .stream()
 .sorted(Comparator.comparing(FileChannelTransactionDetails::getRmtinfSeq)) // or your preferred field
+
+logging.level.org.hibernate.event.internal.DefaultFlushEntityEventListener=TRACE
 .findFirst()
 
 ORDER BY remit_info.RMTINF_SEQ ASC
