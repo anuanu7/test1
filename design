@@ -1,3 +1,5 @@
-# Enable batching
-spring.jpa.properties.hibernate.jdbc.batch_size=50
-spring.jpa.properties.hibernate.order_inserts=true
+While reviewing latency metrics for the /v1/direct/op/file/triggerToMq endpoint, we noticed that although the average and P99 response times are consistently low, the max response time spikes to ~293 seconds in some instances.
+
+We’re trying to understand whether this is expected (e.g., due to occasional downstream delays, retries, or scheduled batch behavior), or if it's worth further investigation.
+
+Could you please confirm if you’re aware of any cases where this endpoint may legitimately take longer to respond? Any insights would be helpful as we analyze potential impact
