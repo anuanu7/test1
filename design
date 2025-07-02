@@ -1,5 +1,53 @@
-While reviewing latency metrics for the /v1/direct/op/file/triggerToMq endpoint, we noticed that although the average and P99 response times are consistently low, the max response time spikes to ~293 seconds in some instances.
+📝 JIRA Ticket: Investigate High Max Response Time on /v1/direct/op/file/triggerToMq Endpoint
+Summary:
+Investigate the unusually high maximum response time (~293s) observed on the /v1/direct/op/file/triggerToMq endpoint, despite low average and percentile latencies.
 
-We’re trying to understand whether this is expected (e.g., due to occasional downstream delays, retries, or scheduled batch behavior), or if it's worth further investigation.
+Component: bdd-ms-op-file-process-service
+Type: Task / Investigation
+Priority: Medium
+Labels: performance, latency-outlier, external-service
 
-Could you please confirm if you’re aware of any cases where this endpoint may legitimately take longer to respond? Any insights would be helpful as we analyze potential impact
+🔍 Background
+While reviewing response time metrics, we observed a significant outlier:
+
+Endpoint: /v1/direct/op/file/triggerToMq
+
+Service: bdd-ms-op-file-process-service
+
+Avg Response Time: 0.288s
+
+P99.9: ~2.097s
+
+Max Response Time: ⚠️ 292.886s
+
+This suggests a rare but severe latency spike, possibly affecting downstream systems.
+
+❓ Open Questions
+Is this max time expected under certain conditions (e.g., retries, queue delays, batch flows)?
+
+Are there known scenarios where this endpoint can take longer than 5 minutes?
+
+Could this be tied to downstream I/O, MQ latency, or service degradation?
+
+✅ Next Steps
+ Reach out to the owning team to confirm if this is a known or acceptable behavior.
+
+ Check logs/APM trace if available around the spike timestamp.
+
+ Assess impact on calling services and error handling strategy.
+
+ Add threshold alerting if needed.
+
+Owner Team: [Add the name or Slack channel / distribution list of the owning team]
+
+Let me know if you'd like this converted into a markdown snippet or Confluence comment for cross-posting!
+
+
+
+
+
+
+
+
+
+Ask ChatGPT
