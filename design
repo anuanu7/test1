@@ -54,3 +54,5 @@ logger.info("GTID: {}", StringUtils.replaceAll("[\\n\\r\\t]", "_");
 
 
 Ask ChatGPT
+
+xtracting values once into local variables reduces method invocation overhead, improves CPU cache locality, and enhances readability for maintainability — especially in high-throughput services.
