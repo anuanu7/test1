@@ -42,7 +42,10 @@ Owner Team: [Add the name or Slack channel / distribution list of the owning tea
 
 Let me know if you'd like this converted into a markdown snippet or Confluence comment for cross-posting!
 
+Got it! Here's a generalized version:
 
+> This is a low-risk SAST issue — the logged fields are structured, system-controlled inputs (not free-form user text).
+> These are consistently logged elsewhere without sanitization, so no additional handling is required here.
 
 
 
