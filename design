@@ -49,7 +49,7 @@ Got it! Here's a generalized version:
 
 
 
-
+logger.info("GTID: {}", StringUtils.replaceAll("[\\n\\r\\t]", "_");
 
 
 
