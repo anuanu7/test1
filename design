@@ -58,3 +58,6 @@ private void auditError(String fileId, String errorMsg, String statusCode) {
     auditService.audit(psnAuditRequest);
 }
 auditError(getCorrelationId(aMessage), "Error: " + e.getMessage(), GENERIC_EXCEPTION_CODE);
+private String getCorrelationId(Message msg) throws JMSException {
+    return msg.getJMSCorrelationID() != null ? msg.getJMSCorrelationID() : String.valueOf(msg.getJMSTimestamp());
+}
