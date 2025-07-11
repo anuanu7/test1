@@ -51,8 +51,10 @@ Got it! Here's a generalized version:
 
 logger.info("GTID: {}", StringUtils.replaceAll("[\\n\\r\\t]", "_");
 
-
-
-Ask ChatGPT
-
-xtracting values once into local variables reduces method invocation overhead, improves CPU cache locality, and enhances readability for maintainability — especially in high-throughput services.
+private void auditError(String fileId, String errorMsg, String statusCode) {
+    psnAuditRequest.setFileId(fileId);
+    psnAuditRequest.setErrorMsg(errorMsg);
+    psnAuditRequest.setEventStatusCode(statusCode);
+    auditService.audit(psnAuditRequest);
+}
+auditError(getCorrelationId(aMessage), "Error: " + e.getMessage(), GENERIC_EXCEPTION_CODE);
