@@ -61,3 +61,7 @@ auditError(getCorrelationId(aMessage), "Error: " + e.getMessage(), GENERIC_EXCEP
 private String getCorrelationId(Message msg) throws JMSException {
     return msg.getJMSCorrelationID() != null ? msg.getJMSCorrelationID() : String.valueOf(msg.getJMSTimestamp());
 }
+
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'bdd_op_psn_process';
+
