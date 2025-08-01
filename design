@@ -1,28 +1,32 @@
 public Optional<PSNTriggerEntity> savePsnTriggerData(FileRawPSNPayload psnPayload) {
     try {
-        Optional<PSNTriggerEntity> existingTriggerOpt = psnTriggerRepository.findByGtid(psnPayload.getGtid());
-        int version = 1;
-        boolean allowUpdate = true;
+        Optional<PSNTriggerEntity> existingOpt = psnTriggerRepository.findByGtId(psnPayload.getGtId());
+        String newStatus = psnPayload.getStatus();
 
-        if (existingTriggerOpt.isPresent()) {
-            PSNTriggerEntity existingTrigger = existingTriggerOpt.get();
-            String existingStatus = existingTrigger.getStatus();
+        if (existingOpt.isPresent()) {
+            PSNTriggerEntity existing = existingOpt.get();
+            String currentStatus = existing.getStatus();
 
-            if ("ACCEPT".equalsIgnoreCase(existingStatus) || "REJECT".equalsIgnoreCase(existingStatus)) {
-                allowUpdate = false;
-                log.info("GTID {} is in a final state: {}. Skipping update.", psnPayload.getGtid(), existingStatus);
-            } else {
-                version = existingTrigger.getVersion() + 1;
-                log.info("Existing GTID found with updatable state. Incrementing version to {}", version);
+            // Check for final state
+            if ("ACCEPT".equalsIgnoreCase(currentStatus) || "REJECT".equalsIgnoreCase(currentStatus)) {
+                log.info("GTID {} is in final state: {}. Skipping update.", psnPayload.getGtId(), currentStatus);
+                return Optional.of(existing);
             }
+
+            // Update status and increment version
+            existing.setStatus(newStatus);
+            existing.setVersion(existing.getVersion() + 1);
+            // Optionally update other fields as needed
+            log.info("Updating existing GTID {} with new status '{}' and version {}", existing.getGtId(), newStatus, existing.getVersion());
+            return Optional.of(psnTriggerRepository.saveAndFlush(existing));
+
+        } else {
+            // Create a new record
+            PSNTriggerEntity newEntity = createPsnTriggerEntity(psnPayload, 1, newStatus);
+            log.info("Creating new GTID {} with version 1 and status '{}'", newEntity.getGtId(), newEntity.getStatus());
+            return Optional.of(psnTriggerRepository.saveAndFlush(newEntity));
         }
 
-        if (!allowUpdate) {
-            throw new FinalStatePsnException("GTID is in final state. Cannot be updated.");
-        }
-
-        PSNTriggerEntity psnTrigger = createPsnTriggerEntity(psnPayload, version);
-        return Optional.of(psnTriggerRepository.saveAndFlush(psnTrigger));
     } catch (DataIntegrityViolationException | ConstraintViolationException e) {
         throw new DuplicatePsnException(DUPLICATE_RECORD_FOUND, "Duplicate PSN Trigger Data", psnPayload.getMessageId(), psnPayload.getCustomerId());
     } catch (Exception ex) {
