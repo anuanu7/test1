@@ -1,67 +1,31 @@
-📝 JIRA Ticket: Investigate High Max Response Time on /v1/direct/op/file/triggerToMq Endpoint
-Summary:
-Investigate the unusually high maximum response time (~293s) observed on the /v1/direct/op/file/triggerToMq endpoint, despite low average and percentile latencies.
+public Optional<PSNTriggerEntity> savePsnTriggerData(FileRawPSNPayload psnPayload) {
+    try {
+        Optional<PSNTriggerEntity> existingTriggerOpt = psnTriggerRepository.findByGtid(psnPayload.getGtid());
+        int version = 1;
+        boolean allowUpdate = true;
 
-Component: bdd-ms-op-file-process-service
-Type: Task / Investigation
-Priority: Medium
-Labels: performance, latency-outlier, external-service
+        if (existingTriggerOpt.isPresent()) {
+            PSNTriggerEntity existingTrigger = existingTriggerOpt.get();
+            String existingStatus = existingTrigger.getStatus();
 
-🔍 Background
-While reviewing response time metrics, we observed a significant outlier:
+            if ("ACCEPT".equalsIgnoreCase(existingStatus) || "REJECT".equalsIgnoreCase(existingStatus)) {
+                allowUpdate = false;
+                log.info("GTID {} is in a final state: {}. Skipping update.", psnPayload.getGtid(), existingStatus);
+            } else {
+                version = existingTrigger.getVersion() + 1;
+                log.info("Existing GTID found with updatable state. Incrementing version to {}", version);
+            }
+        }
 
-Endpoint: /v1/direct/op/file/triggerToMq
+        if (!allowUpdate) {
+            throw new FinalStatePsnException("GTID is in final state. Cannot be updated.");
+        }
 
-Service: bdd-ms-op-file-process-service
-
-Avg Response Time: 0.288s
-
-P99.9: ~2.097s
-
-Max Response Time: ⚠️ 292.886s
-
-This suggests a rare but severe latency spike, possibly affecting downstream systems.
-
-❓ Open Questions
-Is this max time expected under certain conditions (e.g., retries, queue delays, batch flows)?
-
-Are there known scenarios where this endpoint can take longer than 5 minutes?
-
-Could this be tied to downstream I/O, MQ latency, or service degradation?
-
-✅ Next Steps
- Reach out to the owning team to confirm if this is a known or acceptable behavior.
-
- Check logs/APM trace if available around the spike timestamp.
-
- Assess impact on calling services and error handling strategy.
-
- Add threshold alerting if needed.
-
-Owner Team: [Add the name or Slack channel / distribution list of the owning team]
-
-Let me know if you'd like this converted into a markdown snippet or Confluence comment for cross-posting!
-
-Got it! Here's a generalized version:
-
-> This is a low-risk SAST issue — the logged fields are structured, system-controlled inputs (not free-form user text).
-> These are consistently logged elsewhere without sanitization, so no additional handling is required here.
-
-
-
-logger.info("GTID: {}", StringUtils.replaceAll("[\\n\\r\\t]", "_");
-
-private void auditError(String fileId, String errorMsg, String statusCode) {
-    psnAuditRequest.setFileId(fileId);
-    psnAuditRequest.setErrorMsg(errorMsg);
-    psnAuditRequest.setEventStatusCode(statusCode);
-    auditService.audit(psnAuditRequest);
+        PSNTriggerEntity psnTrigger = createPsnTriggerEntity(psnPayload, version);
+        return Optional.of(psnTriggerRepository.saveAndFlush(psnTrigger));
+    } catch (DataIntegrityViolationException | ConstraintViolationException e) {
+        throw new DuplicatePsnException(DUPLICATE_RECORD_FOUND, "Duplicate PSN Trigger Data", psnPayload.getMessageId(), psnPayload.getCustomerId());
+    } catch (Exception ex) {
+        throw new FileStatusPsnException("Exception occurred while storing data into DB", ex.getMessage());
+    }
 }
-auditError(getCorrelationId(aMessage), "Error: " + e.getMessage(), GENERIC_EXCEPTION_CODE);
-private String getCorrelationId(Message msg) throws JMSException {
-    return msg.getJMSCorrelationID() != null ? msg.getJMSCorrelationID() : String.valueOf(msg.getJMSTimestamp());
-}
-
-SELECT table_name FROM information_schema.tables
-WHERE table_schema = 'bdd_op_psn_process';
-
